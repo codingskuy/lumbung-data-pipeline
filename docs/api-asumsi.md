@@ -11,3 +11,5 @@
 Sudah ada di kontrak dan dipakai apa adanya (serviceKey): `GET /admin/rekap-harian`, `POST /admin/papan-harga`.
 
 Temuan: `migrations/0001_init.sql` backend menyimpan berat sebagai `NUMERIC(10,2)` kg, sedangkan openapi.yaml dan KONTEKS §6 menetapkan gram integer.
+
+Asumsi event (LMB-DATA-004): pintu masuk Titeny `POST /api/v1/event/masuk` hanya memakai `X-Idempotency-Key`; Titeny belum mendokumentasikan autentikasi. Lihat `docs/kontrak-event.md`.
