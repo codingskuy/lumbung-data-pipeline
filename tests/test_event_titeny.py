@@ -111,3 +111,15 @@ def test_event_id_sama_dipakai_ulang_pada_retry(tmp_path):
     _, t, *_ = jalankan(tmp_path, Response(500, {}), Response(200, {}))
     ids = {c[2]["X-Idempotency-Key"] for c in t.panggilan}
     assert len(ids) == 1
+
+
+def test_cli_kirim_event_sukses_dan_dlq(tmp_path):
+    from lumbung_pipeline import kirim_event
+
+    k = {"event_type": "panen.dicatat", "payload": PANEN, "occurred_at": "2026-10-01T07:00:00+07:00", "batch_id": "b1"}
+    f = tmp_path / "e.jsonl"
+    f.write_text(json.dumps(k) + "\n" + json.dumps(dict(k, event_type="transaksi.dibuat")) + "\n", encoding="utf-8")
+    t = Seq(Response(200, {"status": "diterima"}))
+    args = ["--berkas", str(f), "--dlq", str(tmp_path / "dlq.jsonl"), "--urutan", str(tmp_path / "seq.json")]
+    kode = kirim_event.main(args, client=TitenyClient("http://titeny", t), sleep=lambda s: None)
+    assert kode == 1 and len(t.panggilan) == 1  # event_type terlarang tidak pernah dikirim
