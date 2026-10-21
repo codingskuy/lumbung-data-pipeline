@@ -11,4 +11,6 @@
 
 Sudah ada di kontrak dan dipakai apa adanya (serviceKey): `GET /admin/rekap-harian`, `POST /admin/papan-harga`.
 
-Temuan: `migrations/0001_init.sql` backend menyimpan berat sebagai `NUMERIC(10,2)` kg, sedangkan openapi.yaml dan KONTEKS §6 menetapkan gram integer.
+Diperiksa ulang terhadap `lumbung-backend-service` (working tree, setelah commit 94e7a3c): endpoint `X-Service-Key` yang ada hanya `/admin/*` (rekap-harian, papan-harga, invoice, mitra, insiden); belum ada endpoint ingest timbangan/trip/harga-referensi, jadi asumsi di atas tetap berlaku.
+
+Keputusan berat: gram bilangan bulat di semua tempat pipeline (CSV, payload ingest, rekap, event); kg desimal tidak diterima. Temuan untuk backend: `migrations/0001_init.sql` masih memakai `NUMERIC(10,2)` kg (`berat_kebun_kg`, `berat_gudang_kg`, `susut_kg`), tidak selaras dengan openapi dan KONTEKS §6 (gram integer).

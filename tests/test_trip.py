@@ -40,7 +40,7 @@ def test_kunci_alami_hanya_kode_trip():
     assert a["uuid"] == b["uuid"]
 
 
-@pytest.mark.parametrize("kolom,nilai", [("trip_kode", "UT-041"), ("komoditas", "beras"), ("tiba_at", "kemarin")])
+@pytest.mark.parametrize("kolom,nilai", [("trip_kode", "UT-041"), ("komoditas", "beras"), ("tiba_at", "kemarin"), ("berat_muat_g", "200.5"), ("berat_terima_g", "-1")])
 def test_trip_tidak_sah(kolom, nilai):
     with pytest.raises(ValueError):
         trip.parse_baris(dict(ROW, **{kolom: nilai}), "x", "t")
