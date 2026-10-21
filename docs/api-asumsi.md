@@ -6,6 +6,7 @@
 |---|---|---|
 | `POST /pipeline/timbangan` | body `{uuid, lot_kode, komoditas, berat_kebun_g, berat_gudang_g, ditimbang_at, sumber, diingest_at}`; `201` baru, `200 {duplikat:true}` ulang | konvensi idempotensi openapi.yaml ("POST membawa uuid klien") |
 | `POST /pipeline/trip` | body `{uuid, trip_kode, komoditas, berat_muat_g, berat_terima_g, berangkat_at, tiba_at, sumber, diingest_at}` | idem |
+| `POST /pipeline/harga-referensi` | body `{uuid, tanggal_survei, komoditas, referensi, harga_per_kg, simpan_sampai, sumber, diingest_at}` | idem; retensi 6 bulan dari keuangan/20 butir 4 |
 | Satuan gram integer | `*_g` integer | openapi.yaml + KONTEKS §6 |
 
 Sudah ada di kontrak dan dipakai apa adanya (serviceKey): `GET /admin/rekap-harian`, `POST /admin/papan-harga`.
