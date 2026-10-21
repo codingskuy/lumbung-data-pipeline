@@ -17,11 +17,11 @@ SCHEMA_VERSION = 1
 EVENT_TYPES = ("panen.dicatat", "harga.diperbarui", "stok.berubah", "stok.snapshot_harian")
 EVENT_ID_RE = re.compile(r"^evt_\d{8}_\d{6}$")
 
-# Field wajib payload v1 (Titeny §3.x).
+# Field wajib payload v1 (Titeny §3.x; berat dalam gram integer, keputusan user: lihat docs/api-asumsi.md).
 WAJIB = {
-    "panen.dicatat": ("panen_id", "komoditas_id", "hasil_kg", "tanggal_panen"),
+    "panen.dicatat": ("panen_id", "komoditas_id", "hasil_g", "tanggal_panen"),
     "harga.diperbarui": ("pasar_id", "komoditas_id", "tanggal", "harga_per_kg"),
-    "stok.berubah": ("gudang_id", "komoditas_id", "perubahan_kg", "stok_akhir_kg", "alasan"),
+    "stok.berubah": ("gudang_id", "komoditas_id", "perubahan_g", "stok_akhir_g", "alasan"),
     "stok.snapshot_harian": ("gudang_id", "tanggal", "baris", "jumlah_baris"),
 }
 ALASAN_STOK = ("masuk_panen", "masuk_beli", "keluar_penjualan", "susut", "koreksi_opname")
@@ -50,6 +50,14 @@ class SequenceStore:
         return n
 
 
+def _gram(v: Any, nama: str, boleh_negatif: bool) -> None:
+    """Berat selalu gram bilangan bulat (KONTEKS §6); kg desimal ditolak."""
+    if not isinstance(v, int) or isinstance(v, bool):
+        raise EventError(f"{nama} harus integer gram, bukan {v!r}")
+    if v < 0 and not boleh_negatif:
+        raise EventError(f"{nama} negatif: {v}")
+
+
 def validasi_payload(event_type: str, payload: Mapping[str, Any]) -> None:
     kurang = [k for k in WAJIB[event_type] if k not in payload]
     if kurang:
@@ -60,8 +68,14 @@ def validasi_payload(event_type: str, payload: Mapping[str, Any]) -> None:
         h = payload["harga_per_kg"]
         if not isinstance(h, int) or isinstance(h, bool) or h <= 0:
             raise EventError("harga.diperbarui: harga_per_kg harus integer rupiah > 0")
-    if event_type == "stok.snapshot_harian" and payload["jumlah_baris"] != len(payload["baris"]):
-        raise EventError("stok.snapshot_harian: jumlah_baris != len(baris)")
+    if event_type == "stok.snapshot_harian":
+        if payload["jumlah_baris"] != len(payload["baris"]):
+            raise EventError("stok.snapshot_harian: jumlah_baris != len(baris)")
+        for b in payload["baris"]:
+            _gram(b.get("stok_g"), "stok_g", boleh_negatif=False)
+    for f, neg in (("hasil_g", False), ("perubahan_g", True), ("stok_akhir_g", False)):
+        if f in payload:
+            _gram(payload[f], f, boleh_negatif=neg)
 
 
 def _waktu(v: str, nama: str) -> datetime:

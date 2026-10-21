@@ -6,12 +6,17 @@ Sumber: KONTEKS-LINTAS-DIVISI §3 (registry 11 event terkunci), Titeny `data/20-
 
 | `event_type` | Payload wajib (Titeny §3) | Konsumen terdokumentasi | Dasar konsumen (Titeny `10-sumber-data.md`) |
 |---|---|---|---|
-| `panen.dicatat` | `panen_id, komoditas_id, hasil_kg, tanggal_panen` | Titeny: model panen | S5 |
+| `panen.dicatat` | `panen_id, komoditas_id, hasil_g, tanggal_panen` | Titeny: model panen | S5 |
 | `harga.diperbarui` | `pasar_id, komoditas_id, tanggal, harga_per_kg` (integer rupiah > 0) | Titeny: model prediksi harga | S1 (lihat catatan) |
-| `stok.berubah` | `gudang_id, komoditas_id, perubahan_kg, stok_akhir_kg, alasan` | Titeny: model harga + panen/demand | S2 |
-| `stok.snapshot_harian` | `gudang_id, tanggal, baris, jumlah_baris` | Titeny: model harga + panen/demand | S2 |
+| `stok.berubah` | `gudang_id, komoditas_id, perubahan_g, stok_akhir_g, alasan` | Titeny: model harga + panen/demand | S2 |
+| `stok.snapshot_harian` | `gudang_id, tanggal, baris[{komoditas_id, stok_g}], jumlah_baris` | Titeny: model harga + panen/demand | S2 |
 
 Konsumen tunggal pintu masuk: Titeny `POST /api/v1/event/masuk`. Pipeline tidak menulis ke DB divisi lain.
+
+## Satuan berat dan penerbit (keputusan user, ASUMSI)
+
+- Semua berat payload dalam **gram bilangan bulat** (`hasil_g`, `perubahan_g`, `stok_akhir_g`, `baris[].stok_g`); float/kg desimal ditolak oleh `events.validasi_payload`. Ini berbeda dari Titeny §3 (`*_kg` desimal); perlu disepakati dengan Titeny, KONTEKS/TownHall tidak diubah.
+- `harga.diperbarui` diterbitkan Lumbung (`source: lumbung`): USULAN keputusan user, belum ada dokumen yang menyebut penerbitnya (Titeny §2 menulis `pasaree`).
 
 ## Amplop
 

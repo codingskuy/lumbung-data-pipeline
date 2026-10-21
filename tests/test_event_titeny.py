@@ -7,7 +7,7 @@ from lumbung_pipeline import events
 from lumbung_pipeline.client import Response
 from lumbung_pipeline.titeny import DeadLetterQueue, TitenyClient, kirim_dengan_retry
 
-PANEN = {"panen_id": "pn_20261001_0091", "komoditas_id": "cmd_cabai", "hasil_kg": 120.5, "tanggal_panen": "2026-10-01"}
+PANEN = {"panen_id": "pn_20261001_0091", "komoditas_id": "cmd_cabai", "hasil_g": 120500, "tanggal_panen": "2026-10-01"}
 
 
 def amplop(urutan=None, **kw):
@@ -40,9 +40,13 @@ def test_empat_event_type_terkunci_dan_tolak_lainnya():
 
 @pytest.mark.parametrize("et,payload", [
     ("panen.dicatat", {"panen_id": "x"}),
-    ("stok.berubah", {"gudang_id": "g", "komoditas_id": "c", "perubahan_kg": 1, "stok_akhir_kg": 2, "alasan": "hilang"}),
+    ("stok.berubah", {"gudang_id": "g", "komoditas_id": "c", "perubahan_g": 1, "stok_akhir_g": 2, "alasan": "hilang"}),
     ("harga.diperbarui", {"pasar_id": "p", "komoditas_id": "c", "tanggal": "2026-10-01", "harga_per_kg": 35.5}),
     ("stok.snapshot_harian", {"gudang_id": "g", "tanggal": "2026-10-01", "baris": [], "jumlah_baris": 3}),
+    ("panen.dicatat", dict(PANEN, hasil_g=120.5)),  # kg desimal / float ditolak
+    ("stok.berubah", {"gudang_id": "g", "komoditas_id": "c", "perubahan_g": -150.5, "stok_akhir_g": 2, "alasan": "susut"}),
+    ("stok.berubah", {"gudang_id": "g", "komoditas_id": "c", "perubahan_g": -1, "stok_akhir_g": -5, "alasan": "susut"}),
+    ("stok.snapshot_harian", {"gudang_id": "g", "tanggal": "2026-10-01", "baris": [{"komoditas_id": "c", "stok_g": 1.5}], "jumlah_baris": 1}),
 ])
 def test_payload_tidak_sah_ditolak(et, payload):
     with pytest.raises(events.EventError):
@@ -123,3 +127,8 @@ def test_cli_kirim_event_sukses_dan_dlq(tmp_path):
     args = ["--berkas", str(f), "--dlq", str(tmp_path / "dlq.jsonl"), "--urutan", str(tmp_path / "seq.json")]
     kode = kirim_event.main(args, client=TitenyClient("http://titeny", t), sleep=lambda s: None)
     assert kode == 1 and len(t.panggilan) == 1  # event_type terlarang tidak pernah dikirim
+
+
+def test_perubahan_stok_boleh_negatif_gram_integer():
+    a = amplop(event_type="stok.berubah", payload={"gudang_id": "g", "komoditas_id": "c", "perubahan_g": -150500, "stok_akhir_g": 4850000, "alasan": "keluar_penjualan"})
+    assert a["payload"]["perubahan_g"] == -150500
