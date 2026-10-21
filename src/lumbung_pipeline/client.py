@@ -27,10 +27,12 @@ class Response:
 Transport = Callable[[str, str, Mapping[str, str], bytes | None], Response]
 
 
-def urllib_transport(method: str, url: str, headers: Mapping[str, str], data: bytes | None) -> Response:
+def urllib_transport(
+    method: str, url: str, headers: Mapping[str, str], data: bytes | None, timeout: float = 30
+) -> Response:
     req = urllib.request.Request(url, data=data, method=method, headers=dict(headers))
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310 (URL dari konfigurasi)
+        with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 (URL dari konfigurasi)
             raw = r.read()
             return Response(r.status, json.loads(raw) if raw else None)
     except urllib.error.HTTPError as e:
